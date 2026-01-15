@@ -1,4 +1,4 @@
-// Config Module
+
 export const AppConfig = {
     fontSize: 18,
     seatSizeGrid: 80,
@@ -6,6 +6,8 @@ export const AppConfig = {
     seatSizeRectH: 60,
     seatSizeRectV: 60
 };
+
+export const SNAP_SIZE = 20;
 
 export function loadConfig() {
     const saved = localStorage.getItem('seatAppConfig');

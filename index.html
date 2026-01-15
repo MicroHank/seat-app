@@ -38,7 +38,7 @@
                             <span class="input-group-text bg-transparent text-light border-secondary">名稱</span>
                             <input type="text" id="examTitleInput"
                                 class="form-control bg-dark text-light border-secondary" placeholder="請輸入名稱"
-                                value="活動名稱">
+                                value="活動名稱" style="max-width: 10rem;">
                         </div>
                     </li>
                     <li class="nav-item dropdown me-2">
@@ -51,7 +51,8 @@
                                     data-bs-target="#modalAddTable"><i class="bi bi-vector-square me-2"></i>自建桌子
                                     (Round/Rect)</a></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
-                                    data-bs-target="#modalSingleSeat"><i class="bi bi-th me-2"></i>矩形座位 (Single Only)</a></li>
+                                    data-bs-target="#modalSingleSeat"><i class="bi bi-th me-2"></i>矩形座位 (Single
+                                    Only)</a></li>
                             <li>
                                 <hr class="dropdown-divider border-secondary">
                             </li>
@@ -63,43 +64,40 @@
                                         class="bi bi-door-open me-2"></i>新增門 (Door)</a></li>
                             <li><a class="dropdown-item" href="#" id="btnAddCabinet"><i
                                         class="bi bi-archive me-2"></i>新增櫃子 (Cabinet)</a></li>
-                            <li><hr class="dropdown-divider border-secondary"></li>
+                            <li>
+                                <hr class="dropdown-divider border-secondary">
+                            </li>
                             <!-- New Object Buttons -->
-                            <li><a class="dropdown-item" href="#" id="btnAddWindow"><i class="bi bi-window me-2"></i>新增窗戶 (Window)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddAirCon"><i class="bi bi-wind me-2"></i>新增冷氣 (Air Con)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddScreen"><i class="bi bi-tv me-2"></i>新增投影幕/電視 (Screen)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddPillar"><i class="bi bi-bricks me-2"></i>新增柱子 (Pillar)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddTrashCan"><i class="bi bi-trash me-2"></i>新增垃圾桶 (Trash Can)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddFan"><i class="bi bi-fan me-2"></i>新增電扇 (Fan)</a></li>
-                            <li><a class="dropdown-item" href="#" id="btnAddBulletin"><i class="bi bi-layout-text-sidebar-reverse me-2"></i>新增佈告欄 (Bulletin)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddWindow"><i
+                                        class="bi bi-window me-2"></i>新增窗戶 (Window)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddAirCon"><i class="bi bi-wind me-2"></i>新增冷氣
+                                    (Air Con)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddScreen"><i
+                                        class="bi bi-tv me-2"></i>新增投影幕/電視 (Screen)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddPillar"><i
+                                        class="bi bi-bricks me-2"></i>新增柱子 (Pillar)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddTrashCan"><i
+                                        class="bi bi-trash me-2"></i>新增垃圾桶 (Trash Can)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddFan"><i class="bi bi-fan me-2"></i>新增電扇
+                                    (Fan)</a></li>
+                            <li><a class="dropdown-item" href="#" id="btnAddBulletin"><i
+                                        class="bi bi-layout-text-sidebar-reverse me-2"></i>新增佈告欄 (Bulletin)</a></li>
                         </ul>
                     </li>
+
                     <li class="nav-item me-2">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary border-0" id="btnUndo" title="復原 (Ctrl+Z)"
-                                disabled>
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                            <button class="btn btn-outline-secondary border-0" id="btnRedo" title="重做 (Ctrl+Y)"
-                                disabled>
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
-                        </div>
-                    </li>
-                    <li class="nav-item me-2">
-                        <button class="btn btn-outline-secondary btn-sm border-0" id="btnToggleSnap" title="切換對齊網格">
-                            <i class="bi bi-grid-3x3"></i>
+                        <button class="btn btn-outline-warning btn-sm border-0" data-bs-toggle="modal"
+                            data-bs-target="#modalClassManager" title="管理班級名冊">
+                            <i class="bi bi-journal-text me-1"></i>名冊與切換
                         </button>
                     </li>
                     <li class="nav-item">
-                        <label class="btn btn-outline-success btn-sm border-0 mb-0" for="xlsxInput">
-                            <i class="bi bi-file-excel me-1"></i>匯入名單
-                        </label>
-                        <input type="file" id="xlsxInput" accept=".xlsx, .xls" class="d-none">
+                        <span id="studentCountBadge" class="badge bg-primary me-3 align-self-center">人數: 0</span>
                     </li>
+
                     <li class="nav-item">
                         <button class="btn btn-outline-light btn-sm" id="btnToggleFullScreen" title="切換投影模式">
-                            <i class="bi bi-projector"></i> 投影模式
+                            <i class="bi bi-projector"></i> 全螢幕
                         </button>
                     </li>
                     <li class="nav-item ms-2">
@@ -125,8 +123,6 @@
                         <label class="btn btn-outline-info btn-sm" for="modeSeat"><i
                                 class="bi bi-person-bounding-box me-1"></i>排座位</label>
                     </div>
-
-                    <span id="studentCountBadge" class="badge bg-primary me-3 align-self-center">人數: 0</span>
                     <div class="btn-group me-2">
                         <button class="btn btn-outline-danger btn-sm" id="btnExportPDF" title="匯出 PDF">
                             PDF
@@ -150,7 +146,7 @@
     <div class="main-workspace d-flex justify-content-center align-items-center">
         <!-- The 16:9 TV Container -->
         <div id="classroom-container" class="shadow-lg position-relative overflow-hidden">
-            <div id="classroom-bg-text">座位表</div>
+            <!-- 備份浮水印<div id="classroom-bg-text">座位表</div> -->
 
             <!-- Dynamic Content Goes Here -->
             <div id="seat-layer"></div>
@@ -263,14 +259,17 @@
                 </div>
                 <div class="modal-body">
                     <ol>
-                        <li class="mb-2">建議先建立桌子/椅子/其他物件，再匯入名單，最後可在「參數」調整文字大小。</li>
-                        <li class="mb-2">拖曳物件：請在「投影模式」下，再進行拖曳物件的動作。</li>
-                        <li class="mb-2">每張桌子都可以透過編輯來改變椅子的數量 (點選桌子上的 <i class="bi bi-pencil-fill"></i> 圖示)。</li>
-                        <li class="mb-2">在座位上按下「右鍵」，可以移除座位。</li>
-                        <li class="mb-2">名單匯入完畢，在右上角按下「排座位」，此時，可以拖曳姓名來交換位置。</li>
-                        <li class="mb-2">完成後，建議按下「匯出」以備份拖曳的物件，會下載一個 JSON 檔案。</li>
+                        <li class="mb-2">建議先建立桌子/椅子/其他物件，接著在「參數」調整文字大小。</li>
+                        <li class="mb-2">拖曳物件：請在「全螢幕」下進行拖曳物件的動作。</li>
+                        <li class="mb-2">每張桌子都可以透過編輯來改變椅子的數量，或是移除桌子。(點選桌子上的 <i class="bi bi-pencil-fill"></i> 圖示和 <i
+                                class="bi bi-x-lg"></i> 圖示)。</li>
+                        <li class="mb-2">名冊與切換：可以建立班級或單位名冊，先輸入名稱，再上傳名單 Excel 檔案。</li>
+                        <li class="mb-2">排桌子模式：預設為排桌子模式，用來移動所有物件，在座位上方按下「右鍵」，可以移除座位。</li>
+                        <li class="mb-2">排座位模式：無法移動桌子與其它物件，可以拖曳名單進行位置的交換。</li>
+                        <li class="mb-2">完成後，建議按下「匯出」以備份座位以及名冊，會下載成一個 JSON 檔案。</li>
                         <li class="mb-2">可以依照不同的空間，先建立好空間的物件，接著匯出儲存檔案，未來可以重複使用。</li>
-                        <li class="mb-2">「匯出 PDF」請在投影模式下再匯出 PDF，才不會有截斷的問題。</li>
+                        <li class="mb-2">「匯出 PDF」請在「全螢幕」模式下，再匯出 PDF，才不會有截斷的問題。</li>
+                        <li class="mb-2">不做一鍵清除，請逐一移除物件或是刪除名單。</li>
                     </ol>
                 </div>
                 <div class="modal-footer border-secondary">
@@ -355,6 +354,10 @@
                         <input class="form-check-input" type="checkbox" id="lotteryExclude" checked>
                         <label class="form-check-label" for="lotteryExclude">排除已抽過的人員</label>
                     </div>
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="lotteryPerTable">
+                        <label class="form-check-label" for="lotteryPerTable">每桌各抽 1 人 (忽略上方人數)</label>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <span class="text-secondary small" id="lotteryPoolSize">名單剩餘: 0 人</span>
                         <button class="btn btn-outline-danger btn-sm" id="btnResetLotteryHistory">
@@ -420,8 +423,8 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">新的椅子數量</label>
-                        <input type="number" id="editTableChairCount" class="form-control bg-dark text-light border-secondary"
-                            min="1" max="20">
+                        <input type="number" id="editTableChairCount"
+                            class="form-control bg-dark text-light border-secondary" min="1" max="20">
                     </div>
                 </div>
                 <div class="modal-footer border-primary">
@@ -444,13 +447,13 @@
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label">列數 (直向)</label>
-                            <input type="number" id="editGridRows" class="form-control bg-dark text-light border-secondary"
-                                min="1" max="10">
+                            <input type="number" id="editGridRows"
+                                class="form-control bg-dark text-light border-secondary" min="1" max="10">
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">行數 (橫向)</label>
-                            <input type="number" id="editGridCols" class="form-control bg-dark text-light border-secondary"
-                                min="1" max="10">
+                            <input type="number" id="editGridCols"
+                                class="form-control bg-dark text-light border-secondary" min="1" max="10">
                         </div>
                     </div>
                 </div>
@@ -480,6 +483,72 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal: Generic Alert -->
+    <div class="modal fade" id="modalGenericAlert" tabindex="-1" style="z-index: 10000;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light border-info">
+                <div class="modal-header border-info text-info">
+                    <h5 class="modal-title"><i class="bi bi-info-circle-fill me-2"></i>訊息</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="genericAlertMessage" class="fs-5"></p>
+                </div>
+                <div class="modal-footer border-info">
+                    <button type="button" class="btn btn-info" data-bs-dismiss="modal">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Generic Confirm -->
+    <div class="modal fade" id="modalGenericConfirm" tabindex="-1" style="z-index: 10001;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light border-warning">
+                <div class="modal-header border-warning text-warning">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>確認</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="genericConfirmMessage" class="fs-5"></p>
+                </div>
+                <div class="modal-footer border-warning">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-warning" id="btnGenericConfirmYes">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Class Manager -->
+    <div class="modal fade" id="modalClassManager" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light border-warning">
+                <div class="modal-header border-warning">
+                    <h5 class="modal-title"><i class="bi bi-journal-album me-2"></i>名冊管理</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">建立常用的班級/單位名單，點擊「套用」即可快速切換。</p>
+
+                    <div id="classListContainer" class="d-flex flex-column gap-2 mb-3">
+                        <!-- Class Slots injected here -->
+                    </div>
+
+                    <button class="btn btn-outline-secondary w-100 dashed-border" id="btnAddClassSlot">
+                        <i class="bi bi-plus-lg me-1"></i>新增班級/單位欄位
+                    </button>
+                </div>
+                <div class="modal-footer border-warning">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Input for Class Slot Import -->
+    <input type="file" id="classSlotInput" accept=".xlsx, .xls" class="d-none">
 
     <!-- Scripts -->
     <!-- jQuery -->

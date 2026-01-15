@@ -1,32 +1,10 @@
-// Layout Module
-import { AppConfig, getSeatSize } from './config.js';
 
-let enableSnap = false;
-let onLayoutChange = null; // Callback for when layout changes (drag stop, resize stop)
-const SNAP_SIZE = 20;
+import { AppConfig, loadConfig, saveConfig } from './config.js';
+import { state } from './state.js';
+import { createTableGroup, createGrid, createFurniture, setupItems } from './items.js';
+import { updateActivityName, updateStudentCountBadge, showAppAlert } from './utils.js';
 
-export function init(callbacks) {
-    if (callbacks.onLayoutChange) onLayoutChange = callbacks.onLayoutChange;
-}
-
-export function setEnableSnap(enabled) {
-    enableSnap = enabled;
-    updateDraggableSnap();
-}
-
-function updateDraggableSnap() {
-    try {
-        const options = enableSnap ? { grid: [SNAP_SIZE, SNAP_SIZE] } : { grid: false };
-        $(".desk-group.ui-draggable").draggable("option", options);
-    } catch (e) { console.warn(e); }
-}
-
-export function redrawLayout() {
-    const layoutData = captureLayoutState();
-    $('#seat-layer').empty();
-    restoreLayoutData(layoutData, true);
-    // Note: App needs to call assignSeats after this
-}
+// --- Layout State Logic ---
 
 export function captureLayoutState() {
     const layout = [];
@@ -51,51 +29,39 @@ export function captureLayoutState() {
         if ($el.find('.table-round').length > 0) {
             type = 'round';
         } else if ($el.find('.table-rect').length > 0) {
-            if ($el.find('.vertical-table').length > 0) {
-                type = 'rect_v';
-            } else {
-                type = 'rect_h';
-            }
+            if ($el.find('.vertical-table').length > 0) type = 'rect_v';
+            else type = 'rect_h';
         } else if ($el.find('.table-lectern').length > 0) {
             type = 'lectern';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-whiteboard').length > 0) {
             type = 'whiteboard';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-door').length > 0) {
             type = 'door';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-cabinet').length > 0) {
             type = 'cabinet';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-window').length > 0) {
             type = 'window';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-aircon').length > 0) {
             type = 'aircon';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-screen').length > 0) {
             type = 'screen';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-pillar').length > 0) {
             type = 'pillar';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else if ($el.find('.table-fan').length > 0) {
             type = 'fan';
         } else if ($el.find('.table-trashcan').length > 0) {
             type = 'trashcan';
         } else if ($el.find('.table-bulletin').length > 0) {
             type = 'bulletin';
-            const isVertical = $el.find('.vertical-text').length > 0;
-            params.shape = isVertical ? 'vertical' : 'horizontal';
+            params.shape = $el.find('.vertical-text').length > 0 ? 'vertical' : 'horizontal';
         } else {
             type = 'grid';
             params.rows = $el.data('rows') || 1;
@@ -105,10 +71,7 @@ export function captureLayoutState() {
 
         layout.push({
             type: type,
-            x: pos.left,
-            y: pos.top,
-            w: width,
-            h: height,
+            x: pos.left, y: pos.top, w: width, h: height,
             params: params
         });
     });
@@ -117,16 +80,22 @@ export function captureLayoutState() {
 }
 
 export function restoreLayoutData(data, forceRegen = false) {
+    if (data.students) {
+        state.students = data.students; 
+        if (data.currentClassName) {
+            state.currentClassName = data.currentClassName;
+        } else {
+            state.currentClassName = '';
+        }
+        updateStudentCountBadge();
+    }
+
     if (data.layout) {
-        // Clear Canvas
         $('#seat-layer').empty();
 
         data.layout.forEach(item => {
             const restoreConfig = {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
+                x: item.x, y: item.y, w: item.w, h: item.h,
                 params: item.params,
                 forceRegen: forceRegen
             };
@@ -140,370 +109,298 @@ export function restoreLayoutData(data, forceRegen = false) {
                 createFurniture(item.type, restoreConfig);
             }
         });
+
+        assignSeats();
     }
 }
 
-export function initInteractions() {
-    const dragOptions = {
-        containment: "#classroom-container",
-        scroll: false,
-        stack: ".desk-group",
-        cancel: ".ui-resizable-handle",
-        start: function (e, ui) { },
-        stop: function (e, ui) {
-            if(onLayoutChange) onLayoutChange();
-        }
-    };
+export function assignSeats(previousAssignments = null) {
+    $('.seat').removeClass('filled').text('');
+    let seatList = [];
 
-    if (enableSnap) {
-        dragOptions.grid = [SNAP_SIZE, SNAP_SIZE];
-    }
+    $('.seat').each(function () {
+        const rect = this.getBoundingClientRect();
+        seatList.push({
+            element: $(this),
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            assigned: false
+        });
+    });
 
-    $(".desk-group:not(.ui-draggable)").draggable(dragOptions);
+    const usedNames = new Set();
 
-    $(".desk-group:not(.ui-resizable)").each(function () {
-        const originalW = $(this).width();
-        const originalH = $(this).height();
-        $(this).data('orig-w', originalW);
-        $(this).data('orig-h', originalH);
+    if (previousAssignments) {
+        previousAssignments.forEach(prev => {
+            let nearest = null;
+            let minDist = Infinity;
+            seatList.forEach(seat => {
+                if (!seat.assigned) {
+                    const dist = Math.hypot(seat.x - prev.x, seat.y - prev.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = seat;
+                    }
+                }
+            });
 
-        $(this).resizable({
-            aspectRatio: false,
-            handles: 'se',
-            resize: function (event, ui) {
-                const $content = $(this).find('.desk-content');
-                const baseW = parseFloat($content.css('width'));
-                const baseH = parseFloat($content.css('height'));
-
-                const newW = ui.size.width;
-                const newH = ui.size.height;
-
-                const scaleX = newW / baseW;
-                const scaleY = newH / baseH;
-
-                $content.css({
-                    'transform': `scale(${scaleX}, ${scaleY})`
-                });
-            },
-            stop: function (event, ui) {
-                if(onLayoutChange) onLayoutChange();
+            if (nearest) {
+                nearest.element.addClass('filled').text(prev.name);
+                nearest.assigned = true;
+                adjustFontSize(nearest.element);
+                usedNames.add(prev.name);
             }
         });
+    }
+
+    seatList.sort((a, b) => {
+        if (Math.abs(a.y - b.y) > 20) return a.y - b.y;
+        return a.x - b.x;
+    });
+
+    let studentIndex = 0;
+    seatList.forEach(seat => {
+        if (!seat.assigned) {
+            while (studentIndex < state.students.length && usedNames.has(state.students[studentIndex])) {
+                studentIndex++;
+            }
+            if (studentIndex < state.students.length) {
+                const name = state.students[studentIndex];
+                seat.element.addClass('filled').text(name);
+                adjustFontSize(seat.element);
+                usedNames.add(name);
+                studentIndex++;
+            }
+        }
     });
 }
 
-export function createTableGroup(shape, seatCount, restoreConfig = null) {
-    const containerW = $('#classroom-container').width();
-    const containerH = $('#classroom-container').height();
-
-    let startX, startY;
-
-    if (restoreConfig) {
-        startX = restoreConfig.x;
-        startY = restoreConfig.y;
-    } else {
-        startX = Math.random() * (containerW - 200) + 50;
-        startY = Math.random() * (containerH - 200) + 50;
-    }
-
-    const $group = $(`<div class="desk-group" style="left: ${startX}px; top: ${startY}px;"></div>`);
-    const $content = $(`<div class="desk-content"></div>`);
-    const $actions = $(`<div class="desk-actions">
-        <i class="bi bi-pencil-fill btn-edit-group" title="Edit Seat Count"></i>
-        <i class="bi bi-x-lg btn-delete-group" title="Remove Table"></i>
-    </div>`);
-
-    $group.append($actions);
-
-    let initialW, initialH;
-
-    if (shape === 'round') {
-        const seatSz = getSeatSize('round') || 60;
-        let radius = Math.max(70, (seatCount * (seatSz + 5)) / (2 * Math.PI));
-        let tableDiameter = (radius - (seatSz / 2) - 10) * 2;
-
-        const $table = $(`<div class="table-shape table-round">Table</div>`);
-        $table.css({
-            width: tableDiameter + 'px',
-            height: tableDiameter + 'px',
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)'
-        });
-        $content.append($table);
-
-        const size = radius * 2 + seatSz;
-        initialW = size;
-        initialH = size;
-        $group.css({ width: size, height: size });
-        $content.css({ width: size, height: size });
-
-        const regenerate = (restoreConfig && restoreConfig.forceRegen);
-
-        if (restoreConfig && restoreConfig.params && restoreConfig.params.seats && !regenerate) {
-            restoreConfig.params.seats.forEach(s => {
-                const $seat = $(`<div class="seat"></div>`);
-                $seat.css({ left: s.x, top: s.y });
-                $content.append($seat);
-            });
-        } else {
-            const centerX = size / 2;
-            const centerY = size / 2;
-            for (let i = 0; i < seatCount; i++) {
-                const angle = (i * 2 * Math.PI) / seatCount;
-                const left = centerX + Math.cos(angle) * radius - (seatSz / 2);
-                const top = centerY + Math.sin(angle) * radius - (seatSz / 2);
-                const $seat = $(`<div class="seat"></div>`);
-                $seat.css({
-                    left: left,
-                    top: top,
-                    width: seatSz + 'px',
-                    height: seatSz + 'px'
-                });
-                $content.append($seat);
-            }
-        }
-
-    } else if (shape === 'rect' || shape === 'rect_h') {
-        const seatSz = getSeatSize('rect_h');
-        const half = Math.ceil(seatCount / 2);
-        const tableWidth = half * (seatSz + 10);
-        const tableHeight = seatSz * 1;
-
-        const groupW = tableWidth;
-        const groupH = tableHeight + (seatSz * 2) + 20;
-
-        initialW = groupW;
-        initialH = groupH;
-
-        $group.css({ width: groupW, height: groupH });
-        $content.css({ width: groupW, height: groupH });
-
-        const $table = $(`<div class="table-shape table-rect"></div>`);
-        $table.css({
-            width: tableWidth,
-            height: tableHeight,
-            position: 'absolute',
-            top: (groupH - tableHeight) / 2,
-            left: (groupW - tableWidth) / 2
-        });
-        $content.append($table);
-
-        const regenerate = (restoreConfig && restoreConfig.forceRegen);
-
-        if (restoreConfig && restoreConfig.params && restoreConfig.params.seats && !regenerate) {
-            restoreConfig.params.seats.forEach(s => {
-                const $seat = $(`<div class="seat"></div>`);
-                $seat.css({ left: s.x, top: s.y, width: seatSz + 'px', height: seatSz + 'px' });
-                $content.append($seat);
-            });
-        } else {
-            for (let i = 0; i < seatCount; i++) {
-                const $seat = $(`<div class="seat"></div>`);
-                let top, left;
-                if (i < half) {
-                    top = (groupH - tableHeight) / 2 - seatSz - 5;
-                    left = 5 + i * (seatSz + 10);
-                } else {
-                    const idx = i - half;
-                    top = (groupH - tableHeight) / 2 + tableHeight + 5;
-                    left = 5 + idx * (seatSz + 10);
-                }
-                $seat.css({ top: top, left: left, width: seatSz + 'px', height: seatSz + 'px' });
-                $content.append($seat);
-            }
-        }
-    } else if (shape === 'rect_v') {
-        const seatSz = getSeatSize('rect_v');
-        const half = Math.ceil(seatCount / 2);
-        const tableWidth = seatSz * 1;
-        const tableHeight = half * (seatSz + 10);
-
-        const groupW = tableWidth + (seatSz * 2) + 20;
-        const groupH = tableHeight;
-
-        initialW = groupW;
-        initialH = groupH;
-
-        $group.css({ width: groupW, height: groupH });
-        $content.css({ width: groupW, height: groupH });
-
-        const $table = $(`<div class="table-shape table-rect vertical-table"></div>`);
-        $table.css({
-            width: tableWidth,
-            height: tableHeight,
-            position: 'absolute',
-            top: (groupH - tableHeight) / 2,
-            left: (groupW - tableWidth) / 2
-        });
-        $content.append($table);
-
-        const regenerate = (restoreConfig && restoreConfig.forceRegen);
-
-        if (restoreConfig && restoreConfig.params && restoreConfig.params.seats && !regenerate) {
-            restoreConfig.params.seats.forEach(s => {
-                const $seat = $(`<div class="seat"></div>`);
-                $seat.css({ left: s.x, top: s.y, width: seatSz + 'px', height: seatSz + 'px' });
-                $content.append($seat);
-            });
-        } else {
-            for (let i = 0; i < seatCount; i++) {
-                const $seat = $(`<div class="seat"></div>`);
-                let top, left;
-                if (i < half) {
-                    left = (groupW - tableWidth) / 2 - seatSz - 5;
-                    top = 5 + i * (seatSz + 10);
-                } else {
-                    const idx = i - half;
-                    left = (groupW - tableWidth) / 2 + tableWidth + 5;
-                    top = 5 + idx * (seatSz + 10);
-                }
-                $seat.css({ top: top, left: left, width: seatSz + 'px', height: seatSz + 'px' });
-                $content.append($seat);
-            }
-        }
-    }
-
-    $group.append($content);
-    $('#seat-layer').append($group);
-
-    if (restoreConfig && restoreConfig.w && restoreConfig.h) {
-        $group.css({ width: restoreConfig.w, height: restoreConfig.h });
-        const scaleX = restoreConfig.w / initialW;
-        const scaleY = restoreConfig.h / initialH;
-        $content.css('transform', `scale(${scaleX}, ${scaleY})`);
-    }
-
-    initInteractions();
+function adjustFontSize($el) {
+    $el.css('font-size', AppConfig.fontSize + 'px');
 }
 
-export function createGrid(rows, cols, restoreConfig = null) {
-    const containerW = $('#classroom-container').width();
-    const seatSz = getSeatSize('grid');
-
-    let startX, startY;
-    if (restoreConfig) {
-        startX = restoreConfig.x;
-        startY = restoreConfig.y;
-    } else {
-        startX = 50;
-        startY = 50;
-    }
-
-    const gapX = 30;
-    const gapY = 30;
-
-    const groupW = cols * seatSz + (cols - 1) * gapX;
-    const groupH = rows * seatSz + (rows - 1) * gapY;
-    const initialW = groupW;
-
-    const $group = $(`<div class="desk-group" style="left: ${startX}px; top: ${startY}px; width: ${groupW}px; height: ${groupH}px;"></div>`);
-    $group.data('rows', rows);
-    $group.data('cols', cols);
-
-    const $content = $(`<div class="desk-content"></div>`);
-    $content.css({ width: groupW, height: groupH });
-
-    const $actions = $(`<div class="desk-actions">
-        <i class="bi bi-pencil-fill btn-edit-group" title="Edit Rows/Cols"></i>
-        <i class="bi bi-x-lg btn-delete-group" title="Remove Table"></i>
-    </div>`);
-    $group.append($actions);
-
-    if (restoreConfig && restoreConfig.params && restoreConfig.params.seats) {
-        restoreConfig.params.seats.forEach(s => {
-            const $seat = $(`<div class="seat"></div>`);
-            $seat.css({ left: s.x, top: s.y, width: seatSz + 'px', height: seatSz + 'px' });
-            $content.append($seat);
+export function captureAssignments() {
+    const assignments = [];
+    $('.seat.filled').each(function () {
+        const rect = this.getBoundingClientRect();
+        assignments.push({
+            name: $(this).text(),
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
         });
-    } else {
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const $seat = $(`<div class="seat"></div>`);
-                const left = c * (seatSz + gapX);
-                const top = r * (seatSz + gapY);
-                $seat.css({ top: top, left: left, width: seatSz + 'px', height: seatSz + 'px' });
-                $content.append($seat);
-            }
+    });
+    return assignments;
+}
+
+// --- App Global State ---
+
+export function captureState() {
+    const layoutData = captureLayoutState();
+    const activityInfo = {
+        title: $('#examTitleInput').val(),
+        posTop: $('#activity-name-display').css('top'),
+        posLeft: $('#activity-name-display').css('left')
+    };
+
+    return {
+        students: [...state.students],
+        currentClassName: state.currentClassName,
+        layout: layoutData.layout,
+        config: { ...AppConfig },
+        activity: activityInfo,
+        timestamp: Date.now()
+    };
+}
+
+export function restoreState(savedState) {
+    if (!savedState) return;
+
+    if (savedState.config) Object.assign(AppConfig, savedState.config);
+    if (savedState.students) state.students = [...savedState.students];
+    if (savedState.currentClassName) state.currentClassName = savedState.currentClassName;
+    updateStudentCountBadge();
+
+    if (savedState.activity) {
+        if (savedState.activity.title !== undefined) {
+            $('#examTitleInput').val(savedState.activity.title);
+            updateActivityName();
+        }
+        if (savedState.activity.posTop && savedState.activity.posLeft) {
+            $('#activity-name-display').css({
+                top: savedState.activity.posTop,
+                left: savedState.activity.posLeft
+            });
         }
     }
 
-    $group.append($content);
-    $('#seat-layer').append($group);
-
-    if (restoreConfig && restoreConfig.w && restoreConfig.h) {
-        $group.css({ width: restoreConfig.w, height: restoreConfig.h });
-        const scaleX = restoreConfig.w / initialW;
-        const scaleY = restoreConfig.h / groupH;
-        $content.css('transform', `scale(${scaleX}, ${scaleY})`);
-    }
-
-    initInteractions();
+    $('#seat-layer').empty();
+    restoreLayoutData(savedState, true);
+    assignSeats();
 }
 
+// --- Persistence ---
 
-export function createFurniture(type, restoreConfig = null) {
-    const containerW = $('#classroom-container').width();
-    const containerH = $('#classroom-container').height();
-    let label = "";
-    let width = 100;
-    let height = 50;
-    let className = "";
-    let shape = (restoreConfig && restoreConfig.params && restoreConfig.params.shape) ? restoreConfig.params.shape : 'horizontal';
-
-    switch (type) {
-        case 'lectern': label = "講台"; width = 150; height = 60; className = "table-lectern"; break;
-        case 'whiteboard': label = "白板"; width = 200; height = 20; className = "table-whiteboard"; break;
-        case 'door': label = "門"; width = 80; height = 10; className = "table-door"; break;
-        case 'cabinet': label = "櫃子"; width = 100; height = 40; className = "table-cabinet"; break;
-        case 'window': label = "窗戶"; width = 100; height = 10; className = "table-window"; break;
-        case 'aircon': label = "冷氣"; width = 80; height = 30; className = "table-aircon"; break;
-        case 'screen': label = "投影幕"; width = 120; height = 10; className = "table-screen"; break;
-        case 'pillar': label = "柱子"; width = 40; height = 80; className = "table-pillar"; break;
-        case 'fan': label = "電扇"; width = 50; height = 50; className = "table-fan"; break;
-        case 'trashcan': label = "垃圾桶"; width = 40; height = 40; className = "table-trashcan"; break;
-        case 'bulletin': label = "佈告欄"; width = 150; height = 10; className = "table-bulletin"; break;
+export function saveToLocal() {
+    const stateData = captureState();
+    try {
+        localStorage.setItem('seatAppAutoSave', JSON.stringify(stateData));
+        $('#saveStatus').html('<i class="bi bi-cloud-check"></i> 已儲存');
+    } catch (e) {
+        console.error("AutoSave Failed", e);
+        $('#saveStatus').html('<i class="bi bi-exclamation-triangle"></i> 儲存失敗');
     }
+}
 
-    if (shape === 'vertical') {
-        let tmp = width; width = height; height = tmp;
+export function tryLoadAutoSave() {
+    const saved = localStorage.getItem('seatAppAutoSave');
+    if (saved) {
+        try {
+            const stateData = JSON.parse(saved);
+            if (stateData.layout || stateData.students) {
+                restoreState(stateData);
+                console.log("Auto-Save restored");
+            }
+        } catch (e) {
+            console.error("Failed to load auto-save", e);
+        }
     }
+}
 
-    let startX, startY;
-    if (restoreConfig) {
-        startX = restoreConfig.x;
-        startY = restoreConfig.y;
-    } else {
-        startX = containerW / 2 - (width / 2);
-        startY = containerH / 2 - (height / 2);
-    }
+// --- Import / Export ---
 
-    const initialW = width;
-    const initialH = height;
+export function exportLayout() {
+    const layoutState = captureLayoutState();
+    const layout = layoutState.layout;
 
-    const $group = $(`<div class="desk-group" style="left: ${startX}px; top: ${startY}px; width: ${width}px; height: ${height}px;"></div>`);
-    const $content = $(`<div class="desk-content"></div>`);
-    $content.css({ width: width, height: height });
+    let $allSeats = $('.seat');
+    let seatList = [];
+    $allSeats.each(function () {
+        const rect = this.getBoundingClientRect();
+        seatList.push({
+            element: $(this),
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            text: $(this).text()
+        });
+    });
 
-    const $actions = $(`<div class="desk-actions"><i class="bi bi-x-lg btn-delete-group" title="Remove Item"></i></div>`);
+    seatList.sort((a, b) => {
+        if (Math.abs(a.y - b.y) > 20) return a.y - b.y;
+        return a.x - b.x;
+    });
 
-    const isVertical = (shape === 'vertical');
-    const $table = $(`<div class="table-shape ${className} ${isVertical ? 'vertical-text' : ''}">${label}</div>`);
-    $table.css({ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 });
+    const currentStudents = seatList.filter(s => s.text).map(s => s.text);
+    const activityInfo = {
+        title: $('#examTitleInput').val(),
+        posTop: $('#activity-name-display').css('top'),
+        posLeft: $('#activity-name-display').css('left')
+    };
 
-    $content.append($table);
-    $group.append($actions);
-    $group.append($content);
+    const data = {
+        students: currentStudents,
+        layout: layout,
+        activity: activityInfo,
+        currentClassName: state.currentClassName,
+        classes: state.classLists, // Assuming synced in state
+        timestamp: new Date().toISOString()
+    };
 
-    $('#seat-layer').append($group);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
 
-    if (restoreConfig && restoreConfig.w && restoreConfig.h) {
-        $group.css({ width: restoreConfig.w, height: restoreConfig.h });
-        const scaleX = restoreConfig.w / initialW;
-        const scaleY = restoreConfig.h / initialH;
-        $content.css('transform', `scale(${scaleX}, ${scaleY})`);
-    }
+    const now = new Date();
+    const dateStr = now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') + "_" +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0');
 
-    initInteractions();
+    let title = $('#examTitleInput').val().trim();
+    if (!title) title = "座位表";
+
+    a.href = url;
+    a.download = `${title}_${dateStr}.json`;
+    a.click();
+}
+
+export function importLayout(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            restoreLayoutData(data); // Will update state.students
+
+            if (data.activity) {
+                if (data.activity.title !== undefined) {
+                    $('#examTitleInput').val(data.activity.title);
+                    updateActivityName();
+                }
+                if (data.activity.posTop && data.activity.posLeft) {
+                    $('#activity-name-display').css({
+                        top: data.activity.posTop,
+                        left: data.activity.posLeft
+                    });
+                }
+            }
+
+            if (data.classes) {
+                state.classLists = data.classes;
+                // Need to persist this? 
+                // There is saveClassLists in app.js. 
+                // Ideally layout.js triggers a save event or we move class list logic here.
+                // For now let's just update state.
+                localStorage.setItem('seatAppClassLists', JSON.stringify(state.classLists));
+                // app.js listener should pick up? No. 
+                // We might need to reload class manager UI.
+            }
+
+            saveToLocal(); // Commit
+            showAppAlert('匯入成功！');
+        } catch (err) {
+            console.error(err);
+            showAppAlert('匯入失敗: 檔案格式錯誤');
+        }
+    };
+    reader.readAsText(file);
+}
+
+export function exportPDF() {
+    const now = new Date();
+    const dateStr = now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') + "_" +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0');
+
+    let title = $('#examTitleInput').val().trim();
+    if (!title) title = "座位表";
+    const filename = `${title}_${dateStr}.pdf`;
+
+    const element = document.getElementById('classroom-container');
+    const width = element.offsetWidth;
+    const height = element.offsetHeight;
+
+    const opt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            windowWidth: width,
+            windowHeight: height
+        },
+        jsPDF: { unit: 'px', format: [width, height], orientation: width > height ? 'landscape' : 'portrait' },
+        pagebreak: { mode: 'avoid-all' }
+    };
+
+    $('.desk-actions').hide();
+    $('.ui-resizable-handle').hide();
+
+    html2pdf().set(opt).from(element).save().then(function () {
+        $('.desk-actions').show();
+        $('.ui-resizable-handle').css('display', '');
+    });
 }
