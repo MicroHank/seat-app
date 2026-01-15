@@ -1,4 +1,6 @@
 
+import { state } from './state.js';
+
 // UI Helpers
 export function showAppAlert(message) {
     $('#genericAlertMessage').text(message);
@@ -23,4 +25,9 @@ export function showAppConfirm(message, callback) {
 export function updateActivityName() {
     const title = $('#examTitleInput').val() || '活動名稱';
     $('#activity-name-display').text(title);
+}
+
+export function updateStudentCountBadge() {
+    const count = state.students ? state.students.length : 0;
+    $('#studentCountBadge').text(`人數: ${count}`);
 }
